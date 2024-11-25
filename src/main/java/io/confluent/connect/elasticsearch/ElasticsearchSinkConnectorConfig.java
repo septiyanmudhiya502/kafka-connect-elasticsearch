@@ -278,6 +278,22 @@ public class ElasticsearchSinkConnectorConfig extends AbstractConfig {
   private static final String WRITE_METHOD_DISPLAY = "Write Method";
   private static final String WRITE_METHOD_DEFAULT = WriteMethod.INSERT.name();
 
+  public static final String UPSERT_SCRIPT_CONFIG = "upsert.script";
+
+  private static final String UPSERT_SCRIPT_DOC = "Script used for"
+          + " upserting data to Elasticsearch. This script allows for"
+          + " customizable behavior upon upserting a document. Please refer to"
+          + " Elasticsearch scripted upsert documentation";
+
+  private static final String UPSERT_SCRIPT_DISPLAY = "Upsert Script";
+
+  public static final String PAYLOAD_AS_PARAMS_CONFIG = "payload.as.params";
+
+  private static final String PAYLOAD_AS_PARAMS_DOC = "Defines Payload to be injected"
+          + " into upsert.script script component as params object";
+
+  private static final String PAYLOAD_AS_PARAMS_DISPLAY = "Payload as Params";
+
   // Proxy group
   public static final String PROXY_HOST_CONFIG = "proxy.host";
   private static final String PROXY_HOST_DISPLAY = "Proxy Host";
@@ -401,7 +417,8 @@ public class ElasticsearchSinkConnectorConfig extends AbstractConfig {
 
   public enum WriteMethod {
     INSERT,
-    UPSERT
+    UPSERT,
+    SCRIPTED_UPSERT
   }
 
   protected static ConfigDef baseConfigDef() {
@@ -702,7 +719,28 @@ public class ElasticsearchSinkConnectorConfig extends AbstractConfig {
             Width.SHORT,
             WRITE_METHOD_DISPLAY,
             new EnumRecommender<>(WriteMethod.class)
-    );
+        ).define(
+            UPSERT_SCRIPT_CONFIG,
+            Type.STRING,
+            null,
+            new ScriptValidator(),
+            Importance.LOW,
+            UPSERT_SCRIPT_DOC,
+            DATA_CONVERSION_GROUP,
+            ++order,
+            Width.SHORT,
+            UPSERT_SCRIPT_DISPLAY,
+            new ScriptValidator()
+        ).define(
+            PAYLOAD_AS_PARAMS_CONFIG,
+            Type.BOOLEAN,
+            null,
+            Importance.LOW,
+            PAYLOAD_AS_PARAMS_DOC,
+            DATA_CONVERSION_GROUP,
+            ++order,
+            Width.SHORT,
+            PAYLOAD_AS_PARAMS_DISPLAY);
   }
 
   private static void addProxyConfigs(ConfigDef configDef) {
@@ -1055,6 +1093,14 @@ public class ElasticsearchSinkConnectorConfig extends AbstractConfig {
 
   public WriteMethod writeMethod() {
     return WriteMethod.valueOf(getString(WRITE_METHOD_CONFIG).toUpperCase());
+  }
+
+  public String getScript() {
+    return getString(UPSERT_SCRIPT_CONFIG);
+  }
+
+  public Boolean getIsPayloadAsParams() {
+    return getBoolean(PAYLOAD_AS_PARAMS_CONFIG);
   }
 
   private static class DataStreamDatasetValidator implements Validator {
